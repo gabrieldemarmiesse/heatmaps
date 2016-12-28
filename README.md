@@ -63,7 +63,7 @@ display_heatmap(new_model, "./dog.jpg")
 <img src=https://raw.githubusercontent.com/gabrieldemarmiesse/heatmaps/master/examples/heatmap_dog_resnet.png width="400px">
 
 It should also work with custom classifiers. 
-Let's say you classifier have two classes: dog (first class) and not dog (second class).
+Let's say your classifier has two classes: dog (first class) and not dog (second class).
 Then this code can get you a heatmap:
 
 ```python
