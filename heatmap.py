@@ -146,18 +146,6 @@ def detect_configuration(model):
         return "global pooling", i
 		
     
-def add_zeros(w, nb_zeros):
-    
-    n = w.shape[3]
-    indexes = np.array(range(1, n))
-    w1 = w
-    for i in range(nb_zeros):
-        w1 = np.insert(w1, indexes + i, 0, axis=2)
-    for i in range(nb_zeros):
-        w1 = np.insert(w1, indexes + i, 0, axis=3)
-    return w1
-	
-    
 def insert_weights(layer, new_layer):
     W,b = layer.get_weights()
     n_filter,previous_filter,ax1,ax2 = new_layer.get_weights()[0].shape
@@ -165,12 +153,6 @@ def insert_weights(layer, new_layer):
     new_W = W.reshape((previous_filter,ax1,ax2,n_filter))
     new_W = new_W.transpose((3,0,1,2))
     new_W = new_W[:,:,::-1,::-1]
-	
-    
-    if ax1!=1:
-        insert_zeros = int((new_layer.get_weights()[0].shape[2] - ax1)/(ax1-1))
-        print("insert_zeros=" + str(insert_zeros))
-        new_W =  add_zeros(new_W, insert_zeros)
     
     new_layer.set_weights([new_W,b])
 	
@@ -201,7 +183,7 @@ def copy_last_layers(model, begin,x):
     return x
     
                 
-def add_reshaped_layer(layer, x, size, no_activation=False, add_zeros = None):
+def add_reshaped_layer(layer, x, size, no_activation=False, atrous_rate = None):
 
     conf = layer.get_config()
     
@@ -209,11 +191,14 @@ def add_reshaped_layer(layer, x, size, no_activation=False, add_zeros = None):
         activation="linear"
     else:
         activation=conf["activation"]
-        
-    #size = int(np.sqrt(layer.get_weights()[0].shape[0]/conf["output_dim"]))
     
-    new_layer = Convolution2D(conf["output_dim"],size,size, activation=activation, name=conf['name'])
-         
+    if size == 1:
+        new_layer = Convolution2D(conf["output_dim"],size,size, 
+                                  activation=activation, name=conf['name'])
+    else:
+        new_layer = AtrousConvolution2D(conf["output_dim"], size, size, 
+                            atrous_rate=(atrous_rate, atrous_rate), 
+                            activation=activation, border_mode='valid')
         
     x= new_layer(x)
     # We transfer the weights:
@@ -221,7 +206,7 @@ def add_reshaped_layer(layer, x, size, no_activation=False, add_zeros = None):
     return x
     
 
-def to_heatmap(model, input_shape = None, delete = False):
+def to_heatmap(model, input_shape = None):
     
     # there are four configurations possible:
     # global pooling
@@ -250,7 +235,7 @@ def to_heatmap(model, input_shape = None, delete = False):
         
         layer = model.layers[index]
         dic = layer.get_config()
-        add_zeros = dic["strides"][0] - 1
+        atrous_rate = dic["strides"][0] 
         dic["strides"] = (1,1)
         new_pool = from_config(layer, dic)
         x = new_pool(x)
@@ -258,14 +243,11 @@ def to_heatmap(model, input_shape = None, delete = False):
         size = get_dim(model, index, input_shape)[1]
         print("Pool size infered: " + str(size))
         
-        conv_size = size + (size-1) * add_zeros
-        
-        print("New convolution size: " + str(conv_size))
         
         if index+2 != len(model.layers)-1:
-            x = add_reshaped_layer(model.layers[index+2],x,conv_size, add_zeros=add_zeros)
+            x = add_reshaped_layer(model.layers[index+2], x, size, atrous_rate=atrous_rate)
         else:
-            x = add_reshaped_layer(model.layers[index+2],x,conv_size, add_zeros=add_zeros,no_activation=True)
+            x = add_reshaped_layer(model.layers[index+2], x, size, atrous_rate=atrous_rate, no_activation=True)
             
         x = copy_last_layers(model, index+3,x)
         
@@ -288,12 +270,6 @@ def to_heatmap(model, input_shape = None, delete = False):
     else:
         raise IndexError("no type for model: " + str(model_type))
         
-    
-    
-    if delete:
-        del(model)
-        gc.collect()
-        print("Original model was deleted.")
     
     return Model(img_input, x)
     
