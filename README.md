@@ -15,6 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from keras.preprocessing import image
+from keras.applications.imagenet_utils import preprocess_input
 
 from keras.applications.vgg16 import VGG16
 
