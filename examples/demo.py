@@ -9,13 +9,14 @@ from heatmap import synset_to_dfs_ids
 from heatmap import to_heatmap
 
 
-def display_heatmap(new_model, img_path, ids):
+def display_heatmap(new_model, img_path, ids, preprocessing=None):
     # The quality is reduced.
     # If you have more than 8GB of RAM, you can try to increase it.
     img = image.load_img(img_path, target_size=(800, 1280))
     x = image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
-    x = preprocess_input(x)
+    if preprocessing is not None:
+        x = preprocess_input(x)
 
     out = new_model.predict(x)
 
@@ -39,4 +40,4 @@ new_model = to_heatmap(model)
 
 s = "n02084071"  # Imagenet code for "dog"
 ids = synset_to_dfs_ids(s)
-display_heatmap(new_model, "./dog.jpg", ids)
+display_heatmap(new_model, "./dog.jpg", ids, preprocess_input)
