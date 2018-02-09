@@ -10,8 +10,7 @@ from scipy.io import loadmat
 # You can look it up: https://github.com/heuritech/convnets-keras
 
 
-
-meta_clsloc_file = join(dirname(__file__), "data", "meta_clsloc.mat")
+meta_clsloc_file = join(dirname(__file__), "../", "data", "meta_clsloc.mat")
 
 synsets = loadmat(meta_clsloc_file)["synsets"][0]
 
@@ -25,6 +24,13 @@ for j in range(1000):
 corr_inv = {}
 for j in range(1, 1001):
     corr_inv[corr[j]] = j
+
+if K.image_data_format() == 'channels_first':
+    ch_axis = 1
+elif K.image_data_format() == 'channels_last':
+    ch_axis = 3
+else:
+    raise TypeError
 
 
 def depthfirstsearch(id_, out=None):
@@ -51,7 +57,9 @@ def synset_to_dfs_ids(synset):
 
 # Keras doesn't have a 4D softmax. So we need this.
 class Softmax4D(Layer):
-    def __init__(self, axis=-1, **kwargs):
+    def __init__(self, axis=None, **kwargs):
+        if axis is None:
+            axis = ch_axis
         self.axis = axis
         super(Softmax4D, self).__init__(**kwargs)
 
@@ -73,7 +81,8 @@ def get_dim(model, layer_index, input_shape=None):
         dummy_vector = np.zeros((1,) + input_shape)
     else:
         if model.layers[0].input_shape[2] is None:
-            raise ValueError('You must provide \"input_shape = (3,256,256)\" for example when calling the function.')
+            raise ValueError(
+                'You must provide \"input_shape = (3,256,256)\" for example when calling the function.')
         dummy_vector = np.zeros((1,) + model.layers[0].input_shape[1:])
 
     intermediate_layer_model = Model(inputs=model.input,
@@ -81,7 +90,7 @@ def get_dim(model, layer_index, input_shape=None):
 
     out = intermediate_layer_model.predict(dummy_vector)
 
-    return out.shape[1:]
+    return out.shape
 
 
 def from_config(layer, config_dic):
@@ -144,8 +153,8 @@ def detect_configuration(model):
 def insert_weights(layer, new_layer):
     W, b = layer.get_weights()
     ax1, ax2, previous_filter, n_filter = new_layer.get_weights()[0].shape
-    new_W = W.reshape((previous_filter, ax1, ax2, n_filter))
-    new_W = new_W.transpose((1, 2, 0, 3))
+    new_W = W.reshape((ax1, ax2, previous_filter, n_filter))
+    new_W = new_W.transpose((0, 1, 2, 3))
 
     new_layer.set_weights([new_W, b])
 
@@ -155,7 +164,7 @@ def copy_last_layers(model, begin, x):
 
     for layer in model.layers[begin:]:
         if layer_type(layer) == "Dense":
-
+            last_activation = layer.get_config()["activation"]
             if i == len(model.layers) - 1:
                 x = add_reshaped_layer(layer, x, 1, no_activation=True)
             else:
@@ -165,13 +174,18 @@ def copy_last_layers(model, begin, x):
             pass
 
         elif layer_type(layer) == "Activation" and i == len(model.layers) - 1:
+            last_activation = layer.get_config()['activation']
             break
-
         else:
             x = add_to_model(x, layer)
         i += 1
-
-    x = Softmax4D(axis=1, name="softmax")(x)
+    if last_activation == 'softmax':
+        x = Softmax4D(name="softmax")(x)
+    elif last_activation == 'sigmoid':
+        x = Activation('sigmoid')(x)
+    else:
+        raise TypeError('activation ' + last_activation + " Not supported.")
+    print("last activation:", last_activation)
     return x
 
 
@@ -189,7 +203,8 @@ def add_reshaped_layer(layer, x, size, no_activation=False, atrous_rate=None):
     else:
         new_layer = Conv2D(conf["units"], (size, size),
                            dilation_rate=(atrous_rate, atrous_rate),
-                           activation=activation, padding='valid')
+                           activation=activation, padding='valid',
+                           name=conf['name'])
 
     x = new_layer(x)
     # We transfer the weights:
@@ -208,8 +223,10 @@ def to_heatmap(model, input_shape=None):
 
     print("Model type detected: " + model_type)
 
-    # new_layer.set_weights(model.layers[0].get_weights())
-    img_input = Input(shape=(3, None, None))
+    if K.image_data_format() == 'channels_first':
+        img_input = Input(shape=(3, None, None))
+    else:
+        img_input = Input(shape=(None, None, 3))
 
     # Inchanged part:
     middle_model = Model(inputs=model.layers[1].input, outputs=model.layers[index - 1].output)
@@ -230,13 +247,14 @@ def to_heatmap(model, input_shape=None):
         new_pool = from_config(layer, dic)
         x = new_pool(x)
 
-        size = get_dim(model, index, input_shape)[1]
+        size = get_dim(model, index, input_shape)[2]
         print("Pool size infered: " + str(size))
 
         if index + 2 != len(model.layers) - 1:
             x = add_reshaped_layer(model.layers[index + 2], x, size, atrous_rate=atrous_rate)
         else:
-            x = add_reshaped_layer(model.layers[index + 2], x, size, atrous_rate=atrous_rate, no_activation=True)
+            x = add_reshaped_layer(model.layers[index + 2], x, size, atrous_rate=atrous_rate,
+                                   no_activation=True)
 
         x = copy_last_layers(model, index + 3, x)
 
@@ -244,7 +262,7 @@ def to_heatmap(model, input_shape=None):
 
         dim = get_dim(model, index, input_shape=input_shape)
 
-        new_pool_size = model.layers[index].get_config()["pool_size"][0] * dim[1]
+        new_pool_size = model.layers[index].get_config()["pool_size"][0] * dim[2]
 
         print("Pool size infered: " + str(new_pool_size))
 
