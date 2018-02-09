@@ -85,7 +85,6 @@ Then this code can get you a heatmap:
 
 ```python
 new_model = to_heatmap(my_custom_model)
-out = new_model.predict(x)
 idx = 0  # The index of the class you care about, here the first one.
 display_heatmap(new_model, "./dog.jpg", idx)
 ```
