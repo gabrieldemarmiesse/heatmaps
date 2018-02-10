@@ -10,7 +10,7 @@ from scipy.io import loadmat
 # You can look it up: https://github.com/heuritech/convnets-keras
 
 
-meta_clsloc_file = join(dirname(__file__), "../", "data", "meta_clsloc.mat")
+meta_clsloc_file = join(dirname(__file__), "data", "meta_clsloc.mat")
 
 synsets = loadmat(meta_clsloc_file)["synsets"][0]
 
