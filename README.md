@@ -14,7 +14,9 @@ but it was only tested with Tensorflow.
 Now installable with pip!
 
 ```
-pip install git+https://github.com/gabrieldemarmiesse/heatmaps.git
+git clone https://github.com/gabrieldemarmiesse/heatmaps.git
+cd heatmaps
+pip install -e .
 ```
 
 Here is a sample of code to understand what is going on:
