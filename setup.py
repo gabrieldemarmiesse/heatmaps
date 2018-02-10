@@ -7,4 +7,5 @@ setup(name='Keras to heatmaps',
       description='Make heatmaps generators from keras models',
       author='Gabriel de Marmiesse',
       install_requires=['numpy', 'keras', 'scipy'],
-      packages=find_packages())
+      packages=find_packages(),
+      include_package_data=True)
