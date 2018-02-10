@@ -1,1 +1,1 @@
-include heatmap/data/*
+include heatmap/data/meta_clsloc
