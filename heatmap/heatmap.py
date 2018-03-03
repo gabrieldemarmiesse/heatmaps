@@ -112,7 +112,6 @@ def layer_type(layer):
     return str(layer)[10:].split(" ")[0].split(".")[-1]
 
 
-
 def detect_configuration(model):
     # must return the configuration and the number of the first pooling layer
 
@@ -148,7 +147,7 @@ def detect_configuration(model):
         return "local pooling - global pooling (different type)", i + 1
 
     else:
-        return "global pooling", i
+        return "global pooling", i + 1
 
 
 def insert_weights(layer, new_layer):
