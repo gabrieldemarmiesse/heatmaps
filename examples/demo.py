@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from keras.applications.imagenet_utils import preprocess_input
-from keras.applications.vgg16 import VGG16
+from keras.applications import *
 from keras.preprocessing import image
 from keras import backend as K
 

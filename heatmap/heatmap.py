@@ -112,6 +112,7 @@ def layer_type(layer):
     return str(layer)[10:].split(" ")[0].split(".")[-1]
 
 
+
 def detect_configuration(model):
     # must return the configuration and the number of the first pooling layer
 
@@ -159,7 +160,7 @@ def insert_weights(layer, new_layer):
     new_layer.set_weights([new_W, b])
 
 
-def copy_last_layers(model, begin, x):
+def copy_last_layers(model, begin, x, last_activation=None):
     i = begin
 
     for layer in model.layers[begin:]:
@@ -250,13 +251,16 @@ def to_heatmap(model, input_shape=None):
         size = get_dim(model, index, input_shape)[2]
         print("Pool size infered: " + str(size))
 
+        # If not the last layer of the model.
         if index + 2 != len(model.layers) - 1:
             x = add_reshaped_layer(model.layers[index + 2], x, size, atrous_rate=atrous_rate)
         else:
             x = add_reshaped_layer(model.layers[index + 2], x, size, atrous_rate=atrous_rate,
                                    no_activation=True)
 
-        x = copy_last_layers(model, index + 3, x)
+        last_activation = model.layers[index + 2].get_config()["activation"]
+
+        x = copy_last_layers(model, index + 3, x, last_activation=last_activation)
 
     elif model_type == "local pooling - global pooling (same type)":
 
