@@ -22,10 +22,14 @@ def test_mobilenet():
     helper_test(MobileNet())
 
 
+def test_inception_resnet():
+    helper_test(InceptionResNetV2())
+
 
 if __name__ == '__main__':
     test_vgg16()
     test_resnet50()
     test_inception_v3()
     test_densenet()
-    #test_mobilenet()
+    test_mobilenet()
+    test_inception_resnet()

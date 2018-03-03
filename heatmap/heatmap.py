@@ -109,6 +109,7 @@ def add_to_model(x, layer):
 
 
 def layer_type(layer):
+    # TODO: use isinstance() instead.
     return str(layer)[10:].split(" ")[0].split(".")[-1]
 
 
@@ -159,7 +160,7 @@ def insert_weights(layer, new_layer):
     new_layer.set_weights([new_W, b])
 
 
-def copy_last_layers(model, begin, x, last_activation=None):
+def copy_last_layers(model, begin, x, last_activation='linear'):
     i = begin
 
     for layer in model.layers[begin:]:
@@ -170,7 +171,7 @@ def copy_last_layers(model, begin, x, last_activation=None):
             else:
                 x = add_reshaped_layer(layer, x, 1)
 
-        elif layer_type(layer) == "Dropout":
+        elif layer_type(layer) == "Dropout" or layer_type(layer) == 'Reshape':
             pass
 
         elif layer_type(layer) == "Activation" and i == len(model.layers) - 1:
@@ -181,10 +182,10 @@ def copy_last_layers(model, begin, x, last_activation=None):
         i += 1
     if last_activation == 'softmax':
         x = Softmax4D(name="softmax")(x)
-    elif last_activation == 'sigmoid':
+    elif last_activation in ['sigmoid', 'linear']:
         x = Activation('sigmoid')(x)
     else:
-        raise TypeError('activation ' + last_activation + " Not supported.")
+        raise TypeError('activation ' + str(last_activation) + " Not supported.")
     print("last activation:", last_activation)
     return x
 
