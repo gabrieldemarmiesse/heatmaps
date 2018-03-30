@@ -122,7 +122,7 @@ The size of the input image is assumed to be 1024x1024.
 | Network        | Heatmap size for a 1024 x 1024 image |
 | ------------- |:-----------------------------------:|
 | VGG16      | 51 x 51                      |
-| VGG16 | 51 x 51                           |
+| VGG19 | 51 x 51                           |
 | ResNet50      | 26 x 26                      |
 | InceptionV3 | 30 x 30                         |
 | Xception      | 32 x 32                     |
