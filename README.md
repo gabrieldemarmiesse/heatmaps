@@ -130,3 +130,7 @@ The size of the input image is assumed to be 1024x1024.
 | MobileNet      | 32 x 32                     |
 | DenseNet121 | 32 x 32                           |
 
+The VGG16 and 19 have a better resolution because we can use a trick 
+before the flatten layer, and replace the convolutions by dilated convolutions.
+
+This library performs this optimization out of the box, without you having to do anything.
