@@ -11,6 +11,8 @@ than in the heuritech repository if the model has a flatten layer).
 This code should work with Theano, Tensorflow, CNTK and with all data formats,
 but it was only tested with Tensorflow.
 
+### Installation
+
 Now installable with pip!
 
 ```
@@ -19,6 +21,8 @@ cd heatmaps
 pip install -e .
 ```
 
+
+### Example with VGG16
 Here is a sample of code to understand what is going on:
 
 ```python
@@ -29,8 +33,7 @@ from keras.applications.vgg16 import VGG16
 from keras.preprocessing import image
 from keras import backend as K
 
-from heatmap import synset_to_dfs_ids
-from heatmap import to_heatmap
+from heatmap import to_heatmap, synset_to_dfs_ids
 
 
 def display_heatmap(new_model, img_path, ids, preprocessing=None):
@@ -77,17 +80,24 @@ This should be used only if your classifier doesn't have fixed sizes for width a
 You must then give the image size that was used during training.
 eg: to_heatmap(model, input_shape=(3,256,256))
 
-
+### Example with ResNet50
 You can also try this:
 ```python
+from keras.applications.resnet50 import ResNet50, preprocess_input
+from heatmap import to_heatmap, synset_to_dfs_ids
 model = ResNet50()
 new_model = to_heatmap(model)
-display_heatmap(new_model, "./dog.jpg", ids)
+
+s = "n02084071"  # Imagenet code for "dog"
+ids = synset_to_dfs_ids(s)
+display_heatmap(new_model, "./dog.jpg", ids, preprocess_input)
 ```
 <img src=https://raw.githubusercontent.com/gabrieldemarmiesse/heatmaps/master/examples/dog.jpg width="400px">
 
 <img src=https://raw.githubusercontent.com/gabrieldemarmiesse/heatmaps/master/examples/heatmap_dog_resnet.png width="400px">
 
+
+### Example with your own model
 It should also work with custom classifiers. 
 Let's say your classifier has two classes: dog (first class) and not dog (second class).
 Then this code can get you a heatmap:
@@ -97,3 +107,26 @@ new_model = to_heatmap(my_custom_model)
 idx = 0  # The index of the class you care about, here the first one.
 display_heatmap(new_model, "./dog.jpg", idx)
 ```
+
+### Note on the sizes of the heatmaps
+
+Due to the topology of common classification neural networks,
+the heatmap produced will be smaller than the input image.
+The downsampling usually happen at maxpool layers or at strided convolution
+layers.
+
+Here is a table to get an idea of the size of the heatmap that you will obtain.
+
+The size of the input image is assumed to be 1024x1024.
+
+| Network        | Heatmap size for a 1024 x 1024 image |
+| ------------- |:-----------------------------------:|
+| VGG16      | 51 x 51                      |
+| VGG16 | 51 x 51                           |
+| ResNet50      | 26 x 26                      |
+| InceptionV3 | 30 x 30                         |
+| Xception      | 32 x 32                     |
+| InceptionResnetV2 | 30 x 30                           |
+| MobileNet      | 32 x 32                     |
+| DenseNet121 | 32 x 32                           |
+
