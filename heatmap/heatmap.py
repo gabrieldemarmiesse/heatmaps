@@ -2,7 +2,7 @@ from os.path import join, dirname
 
 from keras.layers import *
 from keras.layers import deserialize as layer_from_config
-from keras.models import Model
+from keras.models import Model, Sequential
 from scipy.io import loadmat
 
 # Credits to heuritech for their great code which was a great inspiration.
@@ -86,11 +86,9 @@ def get_dim(model, layer_index, input_shape=None):
         dummy_vector = np.zeros((1,) + model.layers[0].input_shape[1:])
 
     intermediate_layer_model = Model(inputs=model.input,
-                                     outputs=model.layers[layer_index].output)
+                                     outputs=model.layers[layer_index].get_output_at(-1))
 
-    out = intermediate_layer_model.predict(dummy_vector)
-
-    return out.shape
+    return intermediate_layer_model.compute_output_shape(dummy_vector.shape)
 
 
 def from_config(layer, config_dic):
@@ -214,6 +212,8 @@ def add_reshaped_layer(layer, x, size, no_activation=False, atrous_rate=None):
 
 
 def to_heatmap(model, input_shape=None):
+    if isinstance(model, Sequential):
+        model = convert_to_functional(model)
     # there are four configurations possible:
     # global pooling
     # local pooling - flatten
@@ -230,7 +230,7 @@ def to_heatmap(model, input_shape=None):
         img_input = Input(shape=(None, None, 3))
 
     # Inchanged part:
-    middle_model = Model(inputs=model.layers[1].input, outputs=model.layers[index - 1].output)
+    middle_model = Model(inputs=model.input, outputs=model.layers[index - 1].get_output_at(-1))
 
     x = middle_model(img_input)
 
@@ -279,3 +279,11 @@ def to_heatmap(model, input_shape=None):
         raise IndexError("no type for model: " + str(model_type))
 
     return Model(img_input, x)
+
+
+def convert_to_functional(model):
+    input_tensor = Input(batch_shape=K.int_shape(model.input))
+    x = input_tensor
+    for layer in model.layers:
+        x = layer(x)
+    return Model(input_tensor, x)
