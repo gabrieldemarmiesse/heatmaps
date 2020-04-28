@@ -1,5 +1,9 @@
 # heatmaps
 
+### Important
+
+This repository is unmaintained, use at your own risk, it works only for multi-backend keras. Better alternative like gradient based methods provide a more accurate result.
+
 ### This repository contain functions that transform a functionnal keras model that classifies images into an heatmap generator.
 
 Some code and a lot of great ideas come from this 
